@@ -1,8 +1,8 @@
 package persistence;
 
-import entities.Member;
 import entities.Registration;
-import entities.RegistrationWithNameAndSportDTO;
+import dto.RegistrationWithNameAndSportDTO;
+import exception.DatabaseException;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -16,7 +16,7 @@ public class RegistrationMapper {
             this.database = database;
         }
 
-        public List<RegistrationWithNameAndSportDTO> getAllRegistrationsWithNameAndSportsType(){
+        public List<RegistrationWithNameAndSportDTO> getAllRegistrationsWithNameAndSportsType() throws DatabaseException {
             String sql = "SELECT m.name, s.sport, r.member_id, r.team_id, r.price\n" +
                     "FROM registration r\n" +
                     "JOIN team t\n" +
@@ -43,17 +43,16 @@ public class RegistrationMapper {
 
                         result.add(new RegistrationWithNameAndSportDTO(name,sportType,registration));
                     }
-                } catch (SQLException throwables) {
-                    // TODO: Make own throwable exception and let it bubble upwards
-                    throwables.printStackTrace();
+                } catch (SQLException e) {
+                    throw new DatabaseException("Fejl ved hentning af alle medlemmer: " + e.getMessage(), e);
                 }
-            } catch (SQLException throwables) {
-                throwables.printStackTrace();
+            } catch (SQLException e) {
+                throw new DatabaseException("Kunne ikke oprette forbindelse til databasen: " + e.getMessage(), e);
             }
             return result;
         }
 
-        public List<Registration> getAllRegistrations(){
+        public List<Registration> getAllRegistrations() throws DatabaseException {
             String sql = "SELECT r.member_id, r.team_id, r.price FROM registration r";
 
             List<Registration> result = new ArrayList<>();
@@ -69,45 +68,65 @@ public class RegistrationMapper {
 
                         result.add(new Registration(memberId,teamId,price));
                     }
-                } catch (SQLException throwables) {
-                    // TODO: Make own throwable exception and let it bubble upwards
-                    throwables.printStackTrace();
+                } catch (SQLException e) {
+                    throw new DatabaseException("Fejl ved hentning af alle medlemmer: " + e.getMessage(), e);
                 }
-            } catch (SQLException throwables) {
-                throwables.printStackTrace();
+            } catch (SQLException e) {
+                throw new DatabaseException("Kunne ikke oprette forbindelse til databasen: " + e.getMessage(), e);
             }
             return result;
         }
 
-        public Registration addToTeam(int memberId, String teamId, int price) {
-            String sql = "INSERT INTO registration (member_id, team_id, price) VALUES (?, ?, ?)";
-            Registration registration = null;
+    public Registration addToTeam(int memberId, String teamId, int price) throws DatabaseException {
+        String sql = "INSERT INTO registration (member_id, team_id, price) VALUES (?, ?, ?)";
 
-            try (Connection connection = database.connect();
-                 PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+        try (Connection connection = database.connect();
+             PreparedStatement ps = connection.prepareStatement(sql)) {
 
-                ps.setInt(1, memberId);
-                ps.setString(2, teamId);
-                ps.setInt(3, price);
+            ps.setInt(1, memberId);
+            ps.setString(2, teamId);
+            ps.setInt(3, price);
 
-                int rowsAffected = ps.executeUpdate();
-                if (rowsAffected == 1) {
-                    ResultSet generatedKeys = ps.getGeneratedKeys();
-                    if (generatedKeys.next()) {
-                        int registrationId = generatedKeys.getInt(1);
-                        registration = new Registration(memberId, teamId, price);
-                    } else {
-                        throw new RuntimeException("Failed to retrieve generated registration ID.");
-                    }
-                } else {
-                    throw new RuntimeException("Inserting registration failed, no rows affected.");
-                }
-
-            } catch (SQLException e) {
-                throw new RuntimeException("Error adding member to team", e);
+            int rowsAffected = ps.executeUpdate();
+            if (rowsAffected == 1) {
+                return new Registration(memberId, teamId, price);
+            } else {
+                throw new DatabaseException("Indsættelse af registrering fejlede - ingen rækker påvirket");
             }
 
-            return registration;
+        } catch (SQLException e) {
+            throw new DatabaseException("Fejl ved tilføjelse af medlem til hold: " + e.getMessage(), e);
         }
+    }
+
+    public boolean isAlreadyRegistered(int memberId, String teamId) throws DatabaseException {
+        String sql = "SELECT COUNT(*) FROM registration WHERE member_id = ? AND team_id = ?";
+
+        try (Connection connection = database.connect();
+             PreparedStatement ps = connection.prepareStatement(sql)) {
+
+            ps.setInt(1, memberId);
+            ps.setString(2, teamId);
+
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                return rs.getInt(1) > 0;
+            }
+            return false;
+
+        } catch (SQLException e) {
+            throw new DatabaseException("Fejl ved tjek af eksisterende registrering: " + e.getMessage(), e);
+        }
+    }
+
+
+    public Registration addToTeamSafe(int memberId, String teamId, int price) throws DatabaseException {
+
+        if (isAlreadyRegistered(memberId, teamId)) {
+            throw new DatabaseException("Medlem med ID " + memberId + " er allerede registreret på hold " + teamId);
+        }
+
+        return addToTeam(memberId, teamId, price);
+    }
     }
 

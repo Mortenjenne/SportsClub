@@ -1,6 +1,7 @@
 package persistence;
 
-import entities.*;
+import dto.*;
+import exception.DatabaseException;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -55,7 +56,7 @@ public class StatisticsMapper {
     }
 
     //Find the number of participants for each sport
-    public List<SportParticipantsDTO> numberOfParticipantsOnEachSportsType (){
+    public List<SportParticipantsDTO> numberOfParticipantsOnEachSportsType () throws DatabaseException {
         String sql = "SELECT s.sport, COUNT(s.sport_id) AS participants\n" +
                 "FROM team t\n" +
                 "INNER JOIN registration r\n" +
@@ -77,18 +78,18 @@ public class StatisticsMapper {
                     result.add(new SportParticipantsDTO(sportType,numberOfParcipants));
                 }
 
-            } catch (SQLException e){
-                System.out.println("Couldnt find anything");
+            } catch (SQLException e) {
+                throw new DatabaseException("Fejl ved hentning af alle medlemmer: " + e.getMessage(), e);
             }
-        }catch (SQLException e){
-            System.out.println("Couldnt connect");
+        } catch (SQLException | DatabaseException e) {
+            throw new DatabaseException("Kunne ikke oprette forbindelse til databasen: " + e.getMessage(), e);
         }
         return result;
 
     }
 
     //Find the number of men and women in the club
-    public List<GenderCountDTO> getNumberOfWomenAndMenInSportsclub(){
+    public List<GenderCountDTO> getNumberOfWomenAndMenInSportsclub() throws DatabaseException {
         String sql = "SELECT m.gender, COUNT(*) AS count\n" +
                 "FROM member m\n" +
                 "JOIN registration r\n" +
@@ -107,16 +108,16 @@ public class StatisticsMapper {
                     result.add(new GenderCountDTO(gender,count));
                 }
 
-            } catch (SQLException e){
-                System.out.println("Couldnt find anything");
+            } catch (SQLException e) {
+                throw new DatabaseException("Fejl ved hentning af alle medlemmer: " + e.getMessage(), e);
             }
-        }catch (SQLException e){
-            System.out.println("Couldnt connect");
+        } catch (SQLException e) {
+            throw new DatabaseException("Kunne ikke oprette forbindelse til databasen: " + e.getMessage(), e);
         }
         return result;
     }
 
-    public int getTotalIncome(){
+    public int getTotalIncome() throws DatabaseException {
         String sql = "SELECT SUM(r.price) AS total_income\n" +
                 "FROM registration r";
 
@@ -132,17 +133,17 @@ public class StatisticsMapper {
                 }
 
 
-            } catch (SQLException e){
-                System.out.println("Couldnt find anything");
+            } catch (SQLException e) {
+                throw new DatabaseException("Fejl ved hentning af alle medlemmer: " + e.getMessage(), e);
             }
-        }catch (SQLException e){
-            System.out.println("Couldnt connect");
+        } catch (SQLException e) {
+            throw new DatabaseException("Kunne ikke oprette forbindelse til databasen: " + e.getMessage(), e);
         }
         return totalIncome;
     }
 
     //Find the total sum of income for each team
-    public List<TeamIncomeDTO> getTotalIncomePrTeam(){
+    public List<TeamIncomeDTO> getTotalIncomePrTeam() throws DatabaseException {
         String sql = "SELECT r.team_id, SUM(r.price) AS total_income\n" +
                 "FROM registration r\n" +
                 "GROUP BY r.team_id";
@@ -160,18 +161,18 @@ public class StatisticsMapper {
                     result.add(new TeamIncomeDTO(teamId,sum));
                 }
 
-            } catch (SQLException e){
-                System.out.println("Couldnt find anything");
+            } catch (SQLException e) {
+                throw new DatabaseException("Fejl ved hentning af alle medlemmer: " + e.getMessage(), e);
             }
-        }catch (SQLException e){
-            System.out.println("Couldnt connect");
+        } catch (SQLException e) {
+            throw new DatabaseException("Kunne ikke oprette forbindelse til databasen: " + e.getMessage(), e);
         }
 
         return result;
     }
 
     //Find the average payment for each team
-    public List<TeamAvgIncomeDTO> averagePaymentPerTeam(){
+    public List<TeamAvgIncomeDTO> averagePaymentPerTeam() throws DatabaseException {
         String sql = "    SELECT r.team_id, AVG(r.price) AS avg_pr_team\n" +
                 "    FROM registration r\n" +
                 "    GROUP BY r.team_id";
@@ -189,11 +190,11 @@ public class StatisticsMapper {
                     result.add(new TeamAvgIncomeDTO(teamId,average));
                 }
 
-            } catch (SQLException e){
-                System.out.println("Couldnt find anything");
+            } catch (SQLException e) {
+                throw new DatabaseException("Fejl ved hentning af alle medlemmer: " + e.getMessage(), e);
             }
-        }catch (SQLException e){
-            System.out.println("Couldnt connect");
+        } catch (SQLException e) {
+            throw new DatabaseException("Kunne ikke oprette forbindelse til databasen: " + e.getMessage(), e);
         }
 
         return result;

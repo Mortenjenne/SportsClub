@@ -5,7 +5,6 @@ import lombok.Data;
 
 @AllArgsConstructor
 @Data
-public class TeamIncomeDTO {
-    private String teamId;
-    private int totalIncome;
+public class Sport {
+    private String name;
 }

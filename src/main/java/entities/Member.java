@@ -19,6 +19,16 @@ public class Member {
         this.year = year;
     }
 
+    public Member(int memberId, String name, String address, int zip, String gender, int year) {
+        this.memberId = memberId;
+        this.name = name;
+        this.address = address;
+        this.zip = zip;
+        this.city = city;
+        this.gender = gender;
+        this.year = year;
+    }
+
     public Member(int memberId, String name, String address, int zip, String city, String gender, int year) {
         this.memberId = memberId;
         this.name = name;

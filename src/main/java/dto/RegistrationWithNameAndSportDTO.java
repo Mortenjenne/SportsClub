@@ -1,5 +1,6 @@
-package entities;
+package dto;
 
+import entities.Registration;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
